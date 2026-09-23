@@ -39,3 +39,35 @@ Conceptual design of the NGT Optimal Calibrations Workflow:
 Detailed data-flow (between SSDs and ramdisks) of the NGT demonstrator:
 
 ![NGT Optimal Calibrations (SAKURA) Demonstrator SSDs Data Flow](images/NGT_OptimalCalibrations-SAKURA_NERD_DataFlow.png)
+
+## Continuous integration
+
+Two workflows run on every push:
+
+- **Pylint** (`.github/workflows/pylint.yml`)
+  - *Errors*: `pylint --enable=E` over every tracked Python file, so genuine
+    mistakes (undefined names, wrong calls) are caught repository-wide.
+  - *Strict*: pylint (score ≥ 9.9), `isort` and `flake8` on the paths listed
+    in [.github/linted-paths.txt](.github/linted-paths.txt). Add a directory
+    to that list once its scripts are clean.
+- **Tests** (`.github/workflows/tests.yml`): `pytest tests` (every tracked
+  Python file compiles, every shell script parses, every JSON/YAML file is
+  valid, plotting requirements stay pinned) plus `shellcheck`.
+
+To reproduce them locally:
+
+```bash
+pip install pylint flake8 isort pytest pyyaml
+
+# errors only, whole repository (same invocation as the CI)
+pylint --disable=all --enable=E --disable=E0401,E1123,E1130 --score=n $(git ls-files '*.py')
+
+# full standard, on the paths under the strict gate
+pylint --fail-under=9.9 $(git ls-files 'Calibrations/NGTCalibrationLoop/*.py')
+
+pytest tests -q
+shellcheck -S error -e SC2148 $(git ls-files '*.sh')
+```
+
+The shared pylint settings live in [.pylintrc](.pylintrc), so a plain
+`pylint <file>` reproduces what the CI does.

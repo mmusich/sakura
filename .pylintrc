@@ -1,0 +1,76 @@
+# Shared pylint configuration for the sakura repository.
+#
+# Keeping the settings here (instead of on the pylint command line in
+# .github/workflows/pylint.yml) means a local `pylint <file>` reproduces
+# exactly what the CI does.
+#
+# See issue #42 for the plan on widening the lint coverage.
+
+[MAIN]
+
+# Machine-generated files: edmConfigDump/HLT menu dumps, conditions dumps and
+# generated input-file lists. These are records of what was run, not code we
+# maintain, so they are never linted (together they are ~550k lines).
+#
+# This has to be `ignore` (basenames) rather than the more precise
+# `ignore-paths`: as of pylint 4.0, ignore-paths is only applied while
+# recursing into directories, not to files listed on the command line, which
+# is how the CI invokes pylint.
+ignore=dump.py,
+       dumpLC.py,
+       dumpLCPed.py,
+       dumpPed.py,
+       dumpPrompt.py,
+       HltConfig.py,
+       all_files_cff.py,
+       fullstatsEgammaConfig_HLT.py,
+       fullstatsEgammaConfig_NGT.py,
+       fullstatsEgammaConfig_Prompt.py,
+       MuFullStatsConfig_150X_dataRun3_HLT_v1.py,
+       MuFullStatsConfig_150X_dataRun3_NGT_v2.py,
+       MuFullStatsConfig_150X_dataRun3_Prompt_v3.py
+
+# Third-party packages are not installed in the CI runner, and the ones that
+# are built dynamically (or wrap C++) cannot be introspected reliably anyway.
+# Without this, pylint reports non-existing members depending on which
+# versions happen to be installed locally.
+ignored-modules=ROOT,
+                FWCore,
+                Configuration,
+                CondCore,
+                CondTools,
+                DQM,
+                HLTrigger,
+                matplotlib,
+                mplhep,
+                numpy,
+                pandas,
+                scipy,
+                uproot,
+                awkward,
+                cx_Oracle,
+                htcondor
+
+[MESSAGES CONTROL]
+
+# The historical set of exemptions, as it was spelled out in the workflow:
+#   R0801 duplicate-code                  (steps 2/3/4 of the loop share boilerplate)
+#   C0103 invalid-name                    (CMSSW/CMS conventions are not PEP8)
+#   E0401 import-error                    (CMSSW python modules are not installed in CI)
+#   W1203 logging-fstring-interpolation   (f-strings in logging calls are fine here)
+#   R1732 consider-using-with             (long-lived Popen handles are intentional)
+#   R0902 too-many-instance-attributes
+#   R0904 too-many-public-methods
+#   R0914 too-many-locals
+#   R0915 too-many-statements
+#   W1509 subprocess-popen-preexec-fn     (used on purpose to detach children)
+disable=R0801,
+        C0103,
+        E0401,
+        W1203,
+        R1732,
+        R0902,
+        R0904,
+        R0914,
+        R0915,
+        W1509

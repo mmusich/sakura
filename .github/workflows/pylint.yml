@@ -1,29 +1,92 @@
 name: Pylint
 
-on: [push]
+# Kept on every push, as before, since branches here are usually pushed and
+# watched before a PR exists. Add `pull_request:` if fork contributions start
+# arriving; for same-repo branches it would only duplicate the runs.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: pylint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  # Tier 1: real errors (undefined names, bad calls, ...) over the whole
+  # repository. Style and refactoring messages are off here, so this stays
+  # green without anyone having to tidy up the older scripts first.
+  errors:
+    name: Errors (whole repository)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint pytest black isort flake8
-    - name: Analysing the code with pylint
-      run: |
-        pylint --disable=R0801,C0103,E0401,W1203,R1732,R0902,R0904,R0914,R0915,W1509 --fail-under=9.9 $(git ls-files 'Calibrations/NGT*.py')
-    - name: Check import order with isort
-      run: |
-        isort --check-only $(git ls-files 'Calibrations/NGT*.py')
-    - name: Run flake8
-      run: |
-        flake8 --ignore=E501 $(git ls-files 'Calibrations/NGT*.py')
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pylint
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+
+      # Exempted on top of .pylintrc, because they cannot be trusted on this
+      # code base and would misfire depending on what is installed:
+      #   E0401 import-error         CMSSW, ROOT and the plotting stack are
+      #                              not (and need not be) on the runner
+      #   E1123 unexpected-keyword-arg / E1130 invalid-unary-operand-type
+      #                              matplotlib builds its norm classes
+      #                              dynamically (make_norm_from_scale), and
+      #                              abstract class attributes left as None
+      #                              for subclasses to set look like bugs
+      # Generated files are skipped through ignore-paths in .pylintrc.
+      - name: Check for errors
+        run: |
+          mapfile -d '' files < <(git ls-files -z '*.py')
+          pylint --disable=all --enable=E --disable=E0401,E1123,E1130 \
+                 --score=n "${files[@]}"
+
+  # Tier 2: the full standard (score >= 9.9, import order, flake8) on the
+  # paths listed in .github/linted-paths.txt. Add a directory to that file
+  # once its scripts are clean.
+  strict:
+    name: Strict (linted paths)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint flake8 isort
+
+      - name: Collect the files under the strict gate
+        run: |
+          mapfile -t patterns < <(grep -vE '^[[:space:]]*(#|$)' .github/linted-paths.txt)
+          if [ ${#patterns[@]} -eq 0 ]; then
+            echo "::error file=.github/linted-paths.txt::No paths listed." >&2
+            exit 1
+          fi
+          git ls-files -- "${patterns[@]}" > "$RUNNER_TEMP/linted-files.txt"
+          if [ ! -s "$RUNNER_TEMP/linted-files.txt" ]; then
+            echo "::error file=.github/linted-paths.txt::None of the listed paths match any tracked file. If scripts were moved or removed, update this file instead of leaving the gate empty (see issue #42)." >&2
+            exit 1
+          fi
+          echo "Linting:"
+          sed 's/^/  /' "$RUNNER_TEMP/linted-files.txt"
+
+      - name: Analysing the code with pylint
+        run: xargs -a "$RUNNER_TEMP/linted-files.txt" pylint --fail-under=9.9
+
+      - name: Check import order with isort
+        run: xargs -a "$RUNNER_TEMP/linted-files.txt" isort --check-only
+
+      - name: Run flake8
+        run: xargs -a "$RUNNER_TEMP/linted-files.txt" flake8 --ignore=E501

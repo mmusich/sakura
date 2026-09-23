@@ -1,0 +1,16 @@
+# Paths held to the strict lint standard (pylint >= 9.9, isort, flake8).
+#
+# Every line is a git pathspec, resolved with `git ls-files`. Add a directory
+# here once its scripts are clean, so that coverage only ever grows; the CI
+# job fails if a listed pattern stops matching anything, which is how the
+# gate silently lost its files in #41.
+#
+# Everything else in the repository is still checked for actual errors
+# (pylint --enable=E) by the other job in .github/workflows/pylint.yml.
+#
+# Current status (issue #42): the directories below are clean. The remaining
+# hand-written scripts sit between 5 and 9.7; roughly half of their findings
+# are trailing whitespace and over-long lines, so a mechanical pass plus
+# isort brings most of them within reach of this gate.
+
+Calibrations/NGTCalibrationLoop/*.py

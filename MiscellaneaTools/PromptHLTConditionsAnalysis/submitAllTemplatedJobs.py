@@ -96,7 +96,7 @@ def ConfigSectionMap(config, section):
         try:
             the_dict[option] = config.get(section, option)
             if the_dict[option] == -1:
-                DebugPrint("skip: %s" % option)
+                print("skip: %s" % option)
         except:
             print("exception on %s!" % option)
             the_dict[option] = None
@@ -176,10 +176,6 @@ class Job:
 ########################    
         return "myTest_"+self.job_name
         
-    def getOutputBaseNameWithData(self):
-########################    
-        return "myTest_"+self.job_name+"_"+self.data
-
     def createTheCfgFile(self,lfn):
 ###############################
         
