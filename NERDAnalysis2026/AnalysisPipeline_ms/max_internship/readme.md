@@ -35,6 +35,7 @@ dataset pattern are blank placeholders:
 | `DATASET_PATTERN` | Dataset regular expression for `generate_filelists.sh`; inspect the generated list before submission. |
 | `FILELIST` | Raw-data input list. Generate it or deliberately reuse an existing list. |
 | `RUNS`, `TAGS`, `GTAGS` | Runs and calibration tags to process; `TAGS` and `GTAGS` are parallel arrays in the same order. |
+| `customizations/<TAG>.py` | Optional per-tag menu change: a file defining `customise(process)`, applied to that tag's `run_cfg.py` by `02_submit.py`. `HLTm23` reruns the HLT conditions with `hltScoutingTrackPacker.mantissaPrecision = 23`. Tag names are letters and digits only. |
 | `DQM_DEST_BASE` | Destination for final DQM histograms. |
 | `DQM_CONFIGS` | Enabled recipes; currently both `dqm/scouting.sh` and `dqm/hlt.sh`. Use only `dqm/scouting.sh` if you only need scouting. |
 | `DQM_WORK_BASE`, `DQM_THREADS` | Attempt directories (default `DQM_work`) and scouting processing threads (default 24). |

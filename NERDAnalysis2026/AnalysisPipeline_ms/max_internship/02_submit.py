@@ -35,8 +35,11 @@ def cfg_array(cfg, name):
     return [l for l in out.split("\n") if l]
 
 
-def write_shared_config(path, dump_path, globaltag):
-    """Freeze the menu once per tag; apply job-specific values inside cmsRun."""
+def write_shared_config(path, dump_path, globaltag, customization=None):
+    """Freeze the menu once per tag; apply job-specific values inside cmsRun.
+
+    customization: optional file defining customise(process), appended and
+    applied after the menu dump (e.g. customizations/HLTm23.py)."""
     overrides = f'''
 
 # Job parameters are supplied by job.sh on the worker node.
@@ -48,6 +51,10 @@ process.source.fileNames = _job_options["input_files"]
 if _job_options["snapshot_time"] is not None:
     process.GlobalTag.snapshotTime = _job_options["snapshot_time"]
 '''
+    if customization is not None:
+        overrides += (f"\n# --- per-tag customisation: {customization.name} ---\n"
+                      + customization.read_text()
+                      + "\nprocess = customise(process)\n")
     path.write_text(dump_path.read_text() + overrides)
 
 
@@ -165,8 +172,11 @@ def main():
 
     jobs_root.mkdir(parents=True)
     shared_config = jobs_root / "run_cfg.py"
-    write_shared_config(shared_config, dump, gt)
-    print(f"Shared CMSSW configuration: {shared_config} (GlobalTag {gt}).",
+    custom = HERE / "customizations" / f"{tag}.py"
+    custom = custom if custom.exists() else None
+    write_shared_config(shared_config, dump, gt, custom)
+    print(f"Shared CMSSW configuration: {shared_config} (GlobalTag {gt}"
+          + (f", customisation {custom.name}" if custom else "") + ").",
           flush=True)
 
     manifest_rows, job_scripts = [], []

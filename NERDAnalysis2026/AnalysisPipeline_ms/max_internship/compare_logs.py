@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare per-log summaries across the HLT, NGT and Prompt calibration tags.
+"""Compare per-log summaries across the HLT, HLTm23, NGT and Prompt tags.
 
 Reads the {tag}_{run}.json files written by summarize_logs.py and prints per-run
 tables (events, input files, dropped messages), log messages present under one
@@ -13,7 +13,7 @@ import json
 import sys
 from pathlib import Path
 
-TAGS = ["HLT", "NGT", "Prompt"]
+TAGS = ["HLT", "HLTm23", "NGT", "Prompt"]
 
 
 def load(d):

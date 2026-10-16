@@ -17,7 +17,7 @@ from collections import Counter
 from pathlib import Path
 
 LOG_NAME = re.compile(
-    r"^dqmclient_(?P<tag>[A-Za-z]+)_DQMTestDataScouting_run(?P<run>\d+)\.log$")
+    r"^dqmclient_(?P<tag>[A-Za-z0-9]+)_DQMTestDataScouting_run(?P<run>\d+)\.log$")
 
 # --- normalisation: applied in order, most specific first ------------------
 SUBS = [
